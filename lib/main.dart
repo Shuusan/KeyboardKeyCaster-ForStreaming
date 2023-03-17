@@ -1,12 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_keylogger_with_cpp/const/keyboard_configuration.dart';
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:window_manager/window_manager.dart';
+
+import 'const/windows_button_color.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Must add this line.
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = const WindowOptions(
+      maximumSize: Size(600, 240),
+      minimumSize: Size(600, 240),
+      size: Size(600, 240),
+      alwaysOnTop: true,
+      titleBarStyle: TitleBarStyle.hidden,
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      title: "Shuシュー Keyboard");
+
+  await windowManager.setPosition(const Offset(700, 440));
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
   KeyloggerController keyloggerController = Get.put(KeyloggerController());
   await keyloggerController.initialize();
   runApp(const MyApp());
@@ -19,18 +45,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Shuシュー Keyboard',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.pink,
       ),
       home: const MyHomePage(),
     );
@@ -42,62 +59,142 @@ class MyHomePage extends GetView<KeyloggerController> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: const Text("Key logger"),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            StreamBuilder<String>(
-                stream: utf8.decoder.bind(controller.stdoutStream),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    print(snapshot.data);
-                    return Text(
-                      '${snapshot.data}',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    );
-                  } else {
-                    return Text(
-                      'Waiting for Data',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    );
-                  }
-                }),
-          ],
+      backgroundColor: Colors.white12.withOpacity(0.2),
+      body: WindowBorder(
+        color: Colors.black87,
+        width: 3,
+        child: GestureDetector(
+          onDoubleTap: () async {
+            await windowManager.setPosition(const Offset(700, 440));
+          },
+          child: Stack(
+            children: <Widget>[
+              SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 22.5, left: 8, right: 8),
+                  child: StreamBuilder<String>(
+                      stream: controller.consoleStream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          controller.refreshString(snapshot.data!.split(' '));
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: keyboardListLayer0.map((id) => KeyPad(id: id)).toList(),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: keyboardListLayer1.map((id) => KeyPad(id: id)).toList(),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: keyboardListLayer2.map((id) => KeyPad(id: id)).toList(),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: keyboardListLayer3.map((id) => KeyPad(id: id)).toList(),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: keyboardListLayer4.map((id) => KeyPad(id: id)).toList(),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          return Text(
+                            'Enter any key to begin!',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          );
+                        }
+                      }),
+                ),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: WindowTitleBarBox(
+                  child: Row(
+                    children: [
+                      Expanded(child: MoveWindow(child: const SizedBox())),
+                      Row(
+                        children: [
+                          MinimizeWindowButton(colors: buttonColors),
+                          CloseWindowButton(colors: closeButtonColors),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class KeyPad extends GetView<KeyloggerController> {
+  const KeyPad({
+    super.key,
+    required this.id,
+    this.width = 40.0,
+  });
+
+  final String id;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(5.0),
+            topRight: Radius.circular(10.0),
+            bottomRight: Radius.circular(5.0),
+            bottomLeft: Radius.circular(10.0),
+          ),
+          color: controller.keyFromStream.contains(id) ? const Color(0xfff1abb9) : const Color(0xffffffff),
+          border: Border.all(width: 3.0, color: const Color(0xfff1abb9).withOpacity(0.3)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x29000000),
+              offset: Offset(-5, 5),
+              blurRadius: 5,
+            ),
+          ],
+        ),
+        //width: width,
+        height: 35,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+              vertical: 2.0,
+              horizontal: id == "SPACEBAR"
+                  ? 58
+                  : id == "SHIFT"
+                      ? 12
+                      : id == "UP" || id == "ENTER"
+                          ? 32
+                          : 7),
+          child: Center(child: Text(id)),
+        ),
+      ),
     );
   }
 }
@@ -107,13 +204,22 @@ class KeyloggerController extends GetxController {
 
   late Process process;
   late Stream<List<int>> stdoutStream;
+  late Stream<String> consoleStream;
 
-  final RxString _obj = ''.obs;
-  set obj(value) => this._obj.value = value;
-  get obj => this._obj.value;
+  List<String> keyFromStream = List<String>.empty(growable: true);
 
   Future<void> initialize() async {
-    process = await Process.start('./lib/keylogger.exe', []);
+    process = await Process.start('keyboard_screencast.exe', []);
+    //process = await Process.start('./keyboard_screencast.exe', []);
+
     stdoutStream = process.stdout;
+    consoleStream = utf8.decoder.bind(stdoutStream);
+  }
+
+  void refreshString(List<String> receive) {
+    keyFromStream.clear();
+    keyFromStream = receive;
+
+    print("receive : $receive");
   }
 }
