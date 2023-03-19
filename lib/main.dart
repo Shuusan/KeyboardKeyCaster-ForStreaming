@@ -9,17 +9,15 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'const/windows_button_color.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Must add this line.
   await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = const WindowOptions(
-      maximumSize: Size(600, 240),
-      minimumSize: Size(600, 240),
-      size: Size(600, 240),
+      maximumSize: Size(600, 225),
+      minimumSize: Size(600, 225),
+      size: Size(600, 225),
       alwaysOnTop: true,
       titleBarStyle: TitleBarStyle.hidden,
       center: true,
@@ -27,8 +25,10 @@ void main() async {
       skipTaskbar: false,
       title: "Shuシュー Keyboard");
 
-  await windowManager.setPosition(const Offset(700, 440));
+  await windowManager.setPosition(const Offset(700, 455));
   windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setResizable(false);
+    await windowManager.setPosition(const Offset(700, 455));
     await windowManager.show();
     await windowManager.focus();
   });
@@ -60,13 +60,20 @@ class MyHomePage extends GetView<KeyloggerController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white12.withOpacity(0.2),
+      backgroundColor: Colors.transparent.withOpacity(0.2),
       body: WindowBorder(
         color: Colors.black87,
         width: 3,
         child: GestureDetector(
           onDoubleTap: () async {
-            await windowManager.setPosition(const Offset(700, 440));
+            await windowManager.setSize(const Size(600, 225));
+            await windowManager.setPosition(const Offset(700, 455));
+          },
+          onTap: () async {
+            await windowManager.minimize();
+          },
+          onLongPressEnd: (val) async {
+            await windowManager.close();
           },
           child: Stack(
             children: <Widget>[
@@ -74,7 +81,7 @@ class MyHomePage extends GetView<KeyloggerController> {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 22.5, left: 8, right: 8),
+                  padding: const EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 8),
                   child: StreamBuilder<String>(
                       stream: controller.consoleStream,
                       builder: (context, snapshot) {
@@ -115,9 +122,11 @@ class MyHomePage extends GetView<KeyloggerController> {
                             ],
                           );
                         } else {
-                          return Text(
-                            'Enter any key to begin!',
-                            style: Theme.of(context).textTheme.headlineMedium,
+                          return Center(
+                            child: Text(
+                              'Enter any key to begin!',
+                              style: Theme.of(context).textTheme.headlineMedium!.copyWith(color: Colors.white),
+                            ),
                           );
                         }
                       }),
@@ -129,12 +138,12 @@ class MyHomePage extends GetView<KeyloggerController> {
                   child: Row(
                     children: [
                       Expanded(child: MoveWindow(child: const SizedBox())),
-                      Row(
-                        children: [
-                          MinimizeWindowButton(colors: buttonColors),
-                          CloseWindowButton(colors: closeButtonColors),
-                        ],
-                      )
+                      // Row(
+                      //   children: [
+                      //     MinimizeWindowButton(colors: buttonColors),
+                      //     CloseWindowButton(colors: closeButtonColors),
+                      //   ],
+                      // )
                     ],
                   ),
                 ),
@@ -164,11 +173,11 @@ class KeyPad extends GetView<KeyloggerController> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
         decoration: BoxDecoration(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(5.0),
-            topRight: Radius.circular(10.0),
-            bottomRight: Radius.circular(5.0),
-            bottomLeft: Radius.circular(10.0),
+          borderRadius: BorderRadius.only(
+            topLeft: controller.keyFromStream.contains(id) ? const Radius.circular(15.0) : const Radius.circular(5.0),
+            topRight: controller.keyFromStream.contains(id) ? const Radius.circular(10.0) : const Radius.circular(5.0),
+            bottomRight: controller.keyFromStream.contains(id) ? const Radius.circular(15.0) : const Radius.circular(5.0),
+            bottomLeft: controller.keyFromStream.contains(id) ? const Radius.circular(10.0) : const Radius.circular(5.0),
           ),
           color: controller.keyFromStream.contains(id) ? const Color(0xfff1abb9) : const Color(0xffffffff),
           border: Border.all(width: 3.0, color: const Color(0xfff1abb9).withOpacity(0.3)),
@@ -219,7 +228,5 @@ class KeyloggerController extends GetxController {
   void refreshString(List<String> receive) {
     keyFromStream.clear();
     keyFromStream = receive;
-
-    print("receive : $receive");
   }
 }
